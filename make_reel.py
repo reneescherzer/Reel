@@ -31,10 +31,10 @@ PHOTOS = [
     ("01-pup-with-toy.jpg", "Booker misses your playtime", None, 4 / 5),
     ("02-cookie-dough.jpg", "I’m keeping our night tradition of Doughy", None, 4 / 5),
     ("03-puppy-eyes.jpg", "The “when is she coming home?” face", None, 4 / 5),
-    ("04-kitchen-duo.jpg", "Welcome-home committee, on standby", (0, 250, 1450, 2062), 4 / 5),
+    ("04-kitchen-duo.jpg", "Welcome-home committee, on standby", (0, 180, 1932, 2112), 1.0),
     ("05-on-your-bed.jpg", "Keeping your bed warm for you", (150, 0, 1362, 1515), 4 / 5),
     ("06-patio-crew.jpg", "Counting down the days until Thanksgiving", None, 4 / 5),
-    ("07-cheers.jpg", "Cheers to you, kiddo!", (180, 0, 1150, 970), 1.0),
+    ("07-cheers.jpg", "Mom and Dad still like each other 😁", (180, 0, 1150, 970), 1.0),
 ]
 
 # --- Look -------------------------------------------------------------------
@@ -50,6 +50,7 @@ TAPES = [ROSE, SAGE, MUSTARD, SKY]
 
 PACIFICO = str(ROOT / "fonts/pacifico/Pacifico-Regular.ttf")
 CAVEAT = str(ROOT / "fonts/caveat/Caveat[wght].ttf")
+EMOJI = "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"  # system font, used for emoji in captions
 
 # --- Timeline (seconds) -----------------------------------------------------
 CARDS_START = 2.5
@@ -182,11 +183,69 @@ def draw_centered(draw, cx, y, text, fnt, fill):
     draw.text((cx - w / 2, y), text, font=fnt, fill=fill)
 
 
+# Caveat has no emoji, so captions draw emoji runs from Noto Color Emoji instead.
+def is_emoji(ch):
+    return ord(ch) >= 0x1F000 or 0x2600 <= ord(ch) <= 0x27BF
+
+
+def text_runs(text):
+    runs = []
+    for ch in text.replace("\ufe0f", ""):
+        emoji = is_emoji(ch)
+        if runs and runs[-1][0] == emoji:
+            runs[-1][1] += ch
+        else:
+            runs.append([emoji, ch])
+    return runs
+
+
+_emoji_cache = {}
+
+
+def emoji_sprite(ch, size):
+    key = (ch, size)
+    if key not in _emoji_cache:
+        im = Image.new("RGBA", (160, 160), (0, 0, 0, 0))
+        ImageDraw.Draw(im).text((10, 10), ch, font=ImageFont.truetype(EMOJI, 109), embedded_color=True)
+        im = im.crop(im.getbbox())
+        _emoji_cache[key] = im.resize((round(size * im.width / im.height), size), Image.LANCZOS)
+    return _emoji_cache[key]
+
+
+def emoji_size(fnt):
+    return round(fnt.size * 0.74)
+
+
+def rich_length(draw, text, fnt):
+    w = 0
+    for emoji, run in text_runs(text):
+        if emoji:
+            w += sum(emoji_sprite(ch, emoji_size(fnt)).width + fnt.size * 0.08 for ch in run)
+        else:
+            w += draw.textlength(run, font=fnt)
+    return w
+
+
+def draw_rich_centered(img, cx, y, text, fnt, fill):
+    d = ImageDraw.Draw(img)
+    x = cx - rich_length(d, text, fnt) / 2
+    asc = fnt.getmetrics()[0]
+    for emoji, run in text_runs(text):
+        if emoji:
+            for ch in run:
+                sp = emoji_sprite(ch, emoji_size(fnt))
+                img.alpha_composite(sp, (round(x + fnt.size * 0.04), round(y + asc - sp.height * 1.02)))
+                x += sp.width + fnt.size * 0.08
+        else:
+            d.text((x, y), run, font=fnt, fill=fill)
+            x += d.textlength(run, font=fnt)
+
+
 def fit_caption(draw, text, max_w):
     """Largest Caveat size that fits on one line, else two lines."""
     for size in range(76, 59, -2):
         f = font(CAVEAT, size, bold=True)
-        if draw.textlength(text, font=f) <= max_w:
+        if rich_length(draw, text, f) <= max_w:
             return f, [text]
     words = text.split()
     best = None
@@ -198,7 +257,7 @@ def fit_caption(draw, text, max_w):
     lines = best[1]
     for size in range(66, 40, -2):
         f = font(CAVEAT, size, bold=True)
-        if max(draw.textlength(l, font=f) for l in lines) <= max_w:
+        if max(rich_length(draw, l, f) for l in lines) <= max_w:
             return f, lines
     return f, lines
 
@@ -249,7 +308,7 @@ def make_card(idx, fname, caption, crop, aspect):
     lh = asc + desc - 10
     y = m + ph + (bottom - lh * len(lines)) / 2 - 6
     for line in lines:
-        draw_centered(d, cw / 2, y, line, f, INK)
+        draw_rich_centered(card, cw / 2, y, line, f, INK)
         y += lh
 
     full = Image.new("RGBA", (cw + 2 * PAD, ch + 2 * PAD), (0, 0, 0, 0))
