@@ -3,7 +3,7 @@
 
 - output/carousel-reel.mp4: a 9:16 video where the Polaroids slide past like a
   swipeable carousel (neighbors peeking in at the edges, page dots below),
-  ending on the "We miss you!" note.
+  ending on the last photo with floating hearts.
 - output/carousel/NN-*.jpg: the same story as 4:5 slides for an Instagram
   carousel post (cover, one slide per photo, the note last).
 
@@ -23,16 +23,15 @@ from make_reel import (
 
 ENTER_START, ENTER = 2.3, 0.7
 ITEM_HOLD, ITEM_MOVE = 2.0, 0.6
-N_ITEMS = len(PHOTOS) + 1  # the photos, then the note
-NOTE_ARRIVE = ENTER_START + ENTER + (N_ITEMS - 1) * (ITEM_HOLD + ITEM_MOVE)
-TOTAL = NOTE_ARRIVE + 3.6
+N_ITEMS = len(PHOTOS)
+LAST_ARRIVE = ENTER_START + ENTER + (N_ITEMS - 1) * (ITEM_HOLD + ITEM_MOVE)
+TOTAL = LAST_ARRIVE + 3.4
 
 CENTER_Y = 1020
 SPACING = 640        # center-to-neighbor distance
 FAR_SPACING = 430    # extra distance for items beyond the neighbors
 SIDE_SCALE = 0.72    # neighbors relative to the centered item
 CARD_SCALE = 0.86
-NOTE_SCALE = 1.0
 TILTS = [-2.0, 1.8, -1.5, 2.2, -1.8, 1.5, -1.2, -2.5]
 DOTS_Y = 1800
 
@@ -68,8 +67,6 @@ def circle_sprite(r, color, alpha=255):
 class CarouselReel(R.Reel):
     def __init__(self):
         super().__init__()
-        self.items = self.cards + [self.note]
-        self.base_scale = [CARD_SCALE] * len(self.cards) + [NOTE_SCALE]
         self.dot = circle_sprite(9, INK, 70)
         self.dot_on = circle_sprite(12, ROSE)
 
@@ -80,8 +77,8 @@ class CarouselReel(R.Reel):
         if pos is None:
             return canvas.convert("RGB")
 
-        if t >= NOTE_ARRIVE - 0.3:
-            self.hearts.draw(canvas, t - NOTE_ARRIVE + 0.1)
+        if t >= LAST_ARRIVE - 0.3:
+            self.hearts.draw(canvas, t - LAST_ARRIVE + 0.1)
 
         # far items first so the centered one lands on top
         for i in sorted(range(N_ITEMS), key=lambda i: -abs(i - pos)):
@@ -91,8 +88,8 @@ class CarouselReel(R.Reel):
                 continue
             x = 540 + math.copysign(min(ad, 1) * SPACING + max(ad - 1, 0) * FAR_SPACING, d)
             grow = 1 + 0.025 * clamp((t - arrival(i)) / ITEM_HOLD) if t >= arrival(i) else 1
-            s = self.base_scale[i] * lerp(1, SIDE_SCALE, min(ad, 1)) * grow
-            place(canvas, self.items[i], x, CENTER_Y + 25 * min(ad, 1), s, TILTS[i])
+            s = CARD_SCALE * lerp(1, SIDE_SCALE, min(ad, 1)) * grow
+            place(canvas, self.cards[i], x, CENTER_Y + 25 * min(ad, 1), s, TILTS[i])
 
         self.draw_dots(canvas, pos, t)
         return canvas.convert("RGB")
@@ -182,7 +179,7 @@ def main():
         prev = OUT / "preview"
         prev.mkdir(exist_ok=True)
         for t in [2.6, arrival(0) + 1, arrival(0) + ITEM_HOLD + 0.3, arrival(3) + 1, arrival(6) + 1,
-                  NOTE_ARRIVE - 0.3, TOTAL - 0.05]:
+                  LAST_ARRIVE - 0.3, TOTAL - 0.05]:
             reel.frame(t).save(prev / f"c{t:05.2f}.jpg", quality=88)
         make_slides(reel)
         print(f"Wrote previews to {prev}", file=sys.stderr)

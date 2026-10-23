@@ -22,7 +22,7 @@ OUT = ROOT / "output"
 # --- Words (edit these to personalize) --------------------------------------
 TITLE_LINES = ["Meanwhile,", "back home…"]
 HEADER = "Meanwhile, back home…"
-SUBTITLE = ["a little update for", "our favorite college girl"]
+SUBTITLE = ["a glimpse into past texts", "to my college daughter"]
 NOTE_TITLE = "We miss you!"
 NOTE_LINES = ["Can't wait to see you.", "Love, everyone back home"]
 
