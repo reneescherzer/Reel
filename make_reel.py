@@ -28,12 +28,12 @@ NOTE_LINES = ["Can't wait to see you.", "Love, everyone back home"]
 
 # photo file, caption, crop box in source pixels (None = centered 4:5), photo aspect (w/h)
 PHOTOS = [
-    ("01-pup-with-toy.jpg", "Toy's ready whenever you are!", None, 4 / 5),
-    ("02-cookie-dough.jpg", "Found the cookie dough stash!", None, 4 / 5),
+    ("01-pup-with-toy.jpg", "Booker misses your playtime", None, 4 / 5),
+    ("02-cookie-dough.jpg", "I’m keeping our night tradition of Doughy", None, 4 / 5),
     ("03-puppy-eyes.jpg", "The “when is she coming home?” face", None, 4 / 5),
     ("04-kitchen-duo.jpg", "Welcome-home committee, on standby", (0, 250, 1450, 2062), 4 / 5),
     ("05-on-your-bed.jpg", "Keeping your bed warm for you", (150, 0, 1362, 1515), 4 / 5),
-    ("06-patio-crew.jpg", "Patio crew says hi!", None, 4 / 5),
+    ("06-patio-crew.jpg", "Counting down the days until Thanksgiving", None, 4 / 5),
     ("07-cheers.jpg", "Cheers to you, kiddo!", (180, 0, 1150, 970), 1.0),
 ]
 
