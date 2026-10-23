@@ -297,8 +297,8 @@ def paste_clipped(canvas, im, x, y):
 
 
 # --- Static layers ----------------------------------------------------------
-def make_background():
-    bg = tinted_texture((W, H), CREAM, 14, seed=99).convert("RGBA")
+def make_background(w=W, h=H):
+    bg = tinted_texture((w, h), CREAM, 14, seed=99).convert("RGBA")
     rnd = random.Random(5)
     makers = [heart_sprite, star_sprite, paw_sprite]
     for _ in range(46):
@@ -306,7 +306,7 @@ def make_background():
         color = rnd.choice([ROSE, SAGE, MUSTARD, SKY, INK])
         sp = rnd.choice(makers)(size, color, alpha=rnd.randint(45, 80))
         sp = sp.rotate(rnd.uniform(-25, 25), Image.BICUBIC, expand=True)
-        bg.alpha_composite(sp, (rnd.randint(0, W - size), rnd.randint(0, H - size)))
+        bg.alpha_composite(sp, (rnd.randint(0, w - size), rnd.randint(0, h - size)))
     return bg
 
 
@@ -515,8 +515,12 @@ def main():
         print(f"Wrote previews to {prev}", file=sys.stderr)
         return
 
-    frames = round(TOTAL * FPS)
-    out = OUT / "reel.mp4"
+    encode(reel, TOTAL, OUT / "reel.mp4", cover=OUT / "cover.jpg")
+
+
+def encode(reel, total, out, cover=None):
+    """Pipe reel.frame(t) for every frame into an H.264 MP4 with a silent audio track."""
+    frames = round(total * FPS)
     cmd = [
         "ffmpeg", "-y", "-loglevel", "error",
         "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
@@ -531,14 +535,14 @@ def main():
         t = f / FPS
         img = reel.frame(t)
         proc.stdin.write(img.tobytes())
-        if f == frames - 1:
-            img.save(OUT / "cover.jpg", quality=92)
+        if cover and f == frames - 1:
+            img.save(cover, quality=92)
         if f % FPS == 0:
-            print(f"  {t:4.0f}s / {TOTAL:.0f}s", file=sys.stderr)
+            print(f"  {t:4.0f}s / {total:.0f}s", file=sys.stderr)
     proc.stdin.close()
     if proc.wait() != 0:
         sys.exit("ffmpeg failed")
-    print(f"Wrote {out} ({frames} frames, {TOTAL:.1f}s)", file=sys.stderr)
+    print(f"Wrote {out} ({frames} frames, {total:.1f}s)", file=sys.stderr)
 
 
 if __name__ == "__main__":
