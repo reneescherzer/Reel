@@ -70,6 +70,7 @@ COLLAGE = [  # (cx, cy, rotation) for each photo, in order
     (290, 1625, -4), (785, 1615, 5),
 ]
 HEADER_Y = 150
+COVER_FAN = [(0, 290, 9), (3, 790, -8), (2, 540, -1)]  # (photo, x, rotation) fanned under the title
 BG_DIM = 0.28  # how much the collage fades back while a photo is featured
 
 
@@ -546,18 +547,17 @@ class Reel:
         return canvas.convert("RGB")
 
     def draw_titles(self, canvas, t):
-        pop = lambda t0: ease_out_back(clamp((t - t0) / 0.5), 1.6)
+        # The first frame is the video's cover/thumbnail, so the title card starts fully drawn.
         out = ease_in_out_cubic(clamp((t - 1.95) / 0.4))
         if out < 1:
             fade = 1 - out
-            shrink = lerp(1.0, 0.85, out)
-            ty = 870 - 60 * out
-            place(canvas, self.cap, 540, ty - 300, (0.2 + 0.8 * pop(0.0)) * shrink,
-                  lerp(-12, 0, pop(0.0)), clamp(t / 0.25) * fade)
-            place(canvas, self.title, 540, ty, lerp(0.6, 1.0, pop(0.15)) * shrink, -3,
-                  clamp((t - 0.15) / 0.25) * fade)
-            place(canvas, self.sub, 540, ty + 330, lerp(0.6, 1.0, pop(0.45)) * shrink,
-                  -1.5, clamp((t - 0.45) / 0.25) * fade)
+            s = (1 + 0.03 * clamp(t / 1.95)) * lerp(1.0, 0.85, out)
+            ty = 720 - 60 * out
+            place(canvas, self.cap, 540, ty - 300 * s, s, -6, fade)
+            place(canvas, self.title, 540, ty, s, -3, fade)
+            place(canvas, self.sub, 540, ty + 330 * s, s, -1.5, fade)
+            for i, x, rot in COVER_FAN:
+                place(canvas, self.cards[i], 540 + (x - 540) * s, ty + 760 * s, 0.42 * s, rot, fade)
         e = ease_out_cubic(clamp((t - 2.2) / 0.45))
         if e > 0:
             place(canvas, self.header, 540, lerp(HEADER_Y - 30, HEADER_Y, e), lerp(1.12, 1.0, e), -1.5, e)

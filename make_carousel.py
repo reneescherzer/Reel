@@ -145,7 +145,7 @@ def make_slides(reel):
 
     # cover: title over a fan of three Polaroids
     cover = bg.copy()
-    for i, x, rot in [(0, 290, 9), (3, 790, -8), (2, 540, -1)]:
+    for i, x, rot in R.COVER_FAN:
         place(cover, reel.cards[i], x, 990, 0.42, rot)
     place(cover, reel.cap, 540, 120, 0.8, -6)
     place(cover, reel.title, 540, 350, 0.82, -3)
